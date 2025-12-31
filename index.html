@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frohes neues Jahr 2026</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0A1A2F;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .greeting {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            color: #D4AF37;
+            opacity: 0;
+            animation: fadeIn 2s ease-in 4s forwards;
+            padding: 20px;
+        }
+
+        .greeting h1 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            font-weight: 300;
+            letter-spacing: 0.15em;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.8),
+                         0 0 60px rgba(212, 175, 55, 0.4);
+        }
+
+        .greeting .sparkle {
+            color: #FFD700;
+            font-size: clamp(1.5rem, 5vw, 3rem);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.9),
+                         0 0 40px rgba(212, 175, 55, 0.6);
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fireworks"></canvas>
+    <div class="greeting">
+        <h1>Frohes neues Jahr <span class="sparkle">✧</span> 2026</h1>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        class Particle {
+            constructor(x, y, vx, vy, size, color, alpha) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.size = size;
+                this.color = color;
+                this.alpha = alpha;
+                this.gravity = 0.05;
+                this.friction = 0.98;
+                this.fade = Math.random() * 0.015 + 0.01;
+            }
+
+            update() {
+                this.vy += this.gravity;
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.fade;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Glow effect
+                ctx.globalAlpha = this.alpha * 0.3;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Rocket {
+            constructor(startX, targetX, targetY, delay) {
+                this.x = startX;
+                this.y = canvas.height;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.vx = (targetX - startX) * 0.015;
+                this.vy = -8 - Math.random() * 2;
+                this.exploded = false;
+                this.particles = [];
+                this.trail = [];
+                this.delay = delay;
+                this.startTime = Date.now();
+            }
+
+            update() {
+                if (Date.now() - this.startTime < this.delay) return;
+
+                if (!this.exploded) {
+                    this.vy += 0.08;
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Trail particles
+                    this.trail.push({
+                        x: this.x,
+                        y: this.y,
+                        alpha: 0.8,
+                        size: 2
+                    });
+
+                    if (this.trail.length > 15) this.trail.shift();
+
+                    // Explode near target
+                    if (this.y <= this.targetY || this.vy > 0) {
+                        this.explode();
+                    }
+                } else {
+                    // Update explosion particles
+                    for (let i = this.particles.length - 1; i >= 0; i--) {
+                        this.particles[i].update();
+                        if (this.particles[i].alpha <= 0) {
+                            this.particles.splice(i, 1);
+                        }
+                    }
+                }
+
+                // Fade trail
+                this.trail.forEach(t => t.alpha *= 0.92);
+            }
+
+            explode() {
+                this.exploded = true;
+                const particleCount = 60 + Math.random() * 40;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.5;
+                    const speed = 2 + Math.random() * 4;
+                    const vx = Math.cos(angle) * speed;
+                    const vy = Math.sin(angle) * speed;
+                    const size = 1.5 + Math.random() * 2;
+                    
+                    // Golden color variations
+                    const goldShades = [
+                        '#D4AF37',
+                        '#FFD700',
+                        '#F4C430',
+                        '#FFDF00',
+                        '#FFF4C2'
+                    ];
+                    const color = goldShades[Math.floor(Math.random() * goldShades.length)];
+                    
+                    this.particles.push(new Particle(
+                        this.x, this.y, vx, vy, size, color, 1
+                    ));
+                }
+            }
+
+            draw() {
+                if (Date.now() - this.startTime < this.delay) return;
+
+                if (!this.exploded) {
+                    // Draw trail
+                    this.trail.forEach(t => {
+                        ctx.save();
+                        ctx.globalAlpha = t.alpha;
+                        ctx.fillStyle = '#D4AF37';
+                        ctx.beginPath();
+                        ctx.arc(t.x, t.y, t.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    });
+
+                    // Draw rocket
+                    ctx.save();
+                    ctx.fillStyle = '#FFD700';
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#D4AF37';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                } else {
+                    // Draw explosion particles
+                    this.particles.forEach(p => p.draw());
+                }
+            }
+
+            isDone() {
+                return this.exploded && this.particles.length === 0;
+            }
+        }
+
+        const rockets = [];
+        let lastRocketTime = Date.now();
+        const rocketInterval = 800; // Zeit zwischen neuen Raketen in ms
+
+        function createRocket() {
+            const startX = canvas.width * (0.2 + Math.random() * 0.6);
+            const targetX = canvas.width * (0.2 + Math.random() * 0.6);
+            const targetY = canvas.height * (0.2 + Math.random() * 0.3);
+            
+            rockets.push(new Rocket(startX, targetX, targetY, 0));
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 26, 47, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Kontinuierlich neue Raketen erstellen
+            const now = Date.now();
+            if (now - lastRocketTime > rocketInterval) {
+                createRocket();
+                lastRocketTime = now;
+            }
+
+            // Update and draw all rockets
+            for (let i = rockets.length - 1; i >= 0; i--) {
+                rockets[i].update();
+                rockets[i].draw();
+                
+                if (rockets[i].isDone()) {
+                    rockets.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
