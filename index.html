@@ -60,6 +60,19 @@
                 opacity: 1;
             }
         }
+
+        .hidden-button {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 100;
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -67,6 +80,7 @@
     <div class="greeting">
         <h1>Frohes neues Jahr <span class="sparkle">✧</span> 2026</h1>
     </div>
+    <button class="hidden-button" onclick="window.location.href='index1.html'"></button>
 
     <script>
         const canvas = document.getElementById('fireworks');
